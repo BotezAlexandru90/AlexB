@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Portfolio editor</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: #252a27;
+      background: #f4f5f2;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --green: #176c46;
+      --line: #d8ddd8;
+      --muted: #65716a;
+      --panel: #fff;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .page { max-width: 1120px; margin: 0 auto; padding: 36px 24px 64px; }
+    header { margin-bottom: 28px; }
+    h1 { margin: 0 0 8px; font-size: clamp(28px, 4vw, 38px); letter-spacing: -0.04em; }
+    h2 { margin: 0 0 18px; font-size: 21px; }
+    h3 { margin: 0; font-size: 18px; }
+    p { line-height: 1.55; }
+    .intro, .notice { color: var(--muted); }
+    .notice { padding: 14px 16px; background: #e8eee9; border-left: 3px solid var(--green); }
+    .layout { display: grid; grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr); gap: 24px; align-items: start; }
+    .panel { padding: 24px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+    .field { display: grid; gap: 7px; margin-bottom: 16px; }
+    label { font-size: 14px; font-weight: 600; }
+    input, textarea { width: 100%; padding: 10px 12px; border: 1px solid #aeb8b1; border-radius: 5px; color: inherit; background: #fff; }
+    input:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+    textarea { min-height: 100px; resize: vertical; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .button { padding: 10px 14px; border: 1px solid var(--green); border-radius: 5px; background: var(--green); color: white; font-weight: 600; }
+    .button-secondary { color: var(--green); background: white; }
+    .button-quiet { border-color: var(--line); color: var(--muted); background: white; }
+    .button-danger { border-color: #a13b32; color: #a13b32; background: white; }
+    .project-list { display: grid; gap: 10px; margin: 0 0 22px; padding: 0; list-style: none; }
+    .project-item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 5px; }
+    .project-item strong { overflow-wrap: anywhere; }
+    .project-item small { display: block; margin-top: 4px; color: var(--muted); }
+    .project-item button { padding: 7px 9px; }
+    .preview { display: grid; gap: 12px; margin-bottom: 26px; }
+    .preview-card { padding: 18px; border: 1px solid var(--line); border-radius: 6px; background: #f7f8f6; }
+    .preview-card summary { cursor: pointer; font-weight: 600; }
+    .preview-card p { margin-bottom: 0; }
+    .preview-category { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+    .preview-outcome { padding-top: 12px; border-top: 1px solid var(--line); }
+    .preview-outcome strong { display: block; color: var(--green); }
+    .export-help { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
+    #export-output { min-height: 220px; font: 12px/1.5 Consolas, monospace; }
+    #status { min-height: 22px; margin: 10px 0 0; color: var(--green); font-size: 14px; }
+
+    @media (max-width: 760px) {
+      .page { padding: 24px 16px 48px; }
+      .layout { grid-template-columns: 1fr; }
+      .panel { padding: 18px; }
+    }
+
+    @media (max-width: 420px) {
+      .project-item { grid-template-columns: minmax(0, 1fr) auto; }
+      .project-item .delete-project { grid-column: 2; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <h1>Portfolio editor</h1>
+      <p class="intro">Create, edit, and preview portfolio entries. Your drafts stay in this browser; nothing is uploaded.</p>
+      <p class="notice"><strong>Standalone tool:</strong> your website does not load this editor. When finished, export the cards and replace the contents of <code>.portfolio-grid</code> in <code>index.html</code>.</p>
+    </header>
+
+    <div class="layout">
+      <section class="panel" aria-labelledby="editor-heading">
+        <h2 id="editor-heading">Add a project</h2>
+        <form id="project-form">
+          <div class="field">
+            <label for="category">Category</label>
+            <input id="category" name="category" required maxlength="100" placeholder="AI automation · Reporting">
+          </div>
+          <div class="field">
+            <label for="title">Project title</label>
+            <input id="title" name="title" required maxlength="120" placeholder="Quarterly Reporting Automation">
+          </div>
+          <div class="field">
+            <label for="challenge">Challenge (optional)</label>
+            <textarea id="challenge" name="challenge" maxlength="500" placeholder="What problem or need did this address?"></textarea>
+          </div>
+          <div class="field">
+            <label for="description">Contribution</label>
+            <textarea id="description" name="description" required maxlength="1000" placeholder="What did you build or deliver?"></textarea>
+          </div>
+          <div class="field">
+            <label for="tools">Tools (optional)</label>
+            <input id="tools" name="tools" maxlength="160" placeholder="SQL, Excel VBA">
+          </div>
+          <div class="field">
+            <label for="outcome">Outcome headline</label>
+            <input id="outcome" name="outcome" required maxlength="100" placeholder="Under 6 hours">
+          </div>
+          <div class="field">
+            <label for="outcome-detail">Outcome detail</label>
+            <input id="outcome-detail" name="outcomeDetail" required maxlength="180" placeholder="Down from two weeks">
+          </div>
+          <div class="field">
+            <label for="source">Source link (optional, https://…)</label>
+            <input id="source" name="source" type="url" maxlength="300" placeholder="https://github.com/BotezAlexandru90/project">
+          </div>
+          <div class="actions">
+            <button class="button" id="save-project" type="submit">Add project</button>
+            <button class="button button-quiet" id="cancel-edit" type="button" hidden>Cancel edit</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="projects-heading">
+        <h2 id="projects-heading">Projects <span id="project-count"></span></h2>
+        <ul class="project-list" id="project-list"></ul>
+        <h2>Preview</h2>
+        <div class="preview" id="preview"></div>
+        <h2>Export for the website</h2>
+        <p class="export-help">Copy this static HTML into the existing <code>.portfolio-grid</code>. The published site will not need this editor or its JavaScript.</p>
+        <div class="actions">
+          <button class="button" id="copy-export" type="button">Copy HTML</button>
+          <button class="button button-secondary" id="download-export" type="button">Download HTML</button>
+        </div>
+        <label class="field" for="export-output" style="margin-top: 14px">Generated HTML</label>
+        <textarea id="export-output" readonly spellcheck="false"></textarea>
+        <p id="status" role="status" aria-live="polite"></p>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var storageKey = "alexandru-botez-portfolio-editor-v1";
+      var initialProjects = [
+        {
+          category: "AI automation · Reporting",
+          title: "Quarterly Reporting Automation",
+          challenge: "Quarterly reporting consolidation was a lengthy manual process.",
+          tools: "AI agents, data consolidation",
+          description: "Designed an AI agent pipeline that consolidates quarterly reporting into a scalable automated workflow.",
+          outcome: "<6 hours",
+          outcomeDetail: "Down from two weeks · >95% processing-time reduction",
+          source: "https://www.google.com"
+        },
+        {
+          category: "Cost engineering · Data",
+          title: "Motorcycle Customer Quote Cost Database",
+          challenge: "Customer quotes needed consistent, accurate cost inputs delivered quickly.",
+          tools: "SQL, Excel VBA",
+          description: "Built and maintained a structured cost database supporting customer quotations for the commercial team.",
+          outcome: "Reliable cost data",
+          outcomeDetail: "Structured for faster quoting and management review",
+          source: "https://www.google.com"
+        },
+        {
+          category: "Target costing · Commercial analysis",
+          title: "Product Cost & Make-or-Buy Analysis",
+          challenge: "Sourcing and commercial decisions required clear product cost visibility.",
+          tools: "Cost modelling, Excel, data analysis",
+          description: "Delivered product costing and make-or-buy assessments for motorcycle braking systems and commercial business cases.",
+          outcome: "Decision support",
+          outcomeDetail: "Cost visibility for sourcing and commercial decisions",
+          source: "https://www.google.com"
+        }
+      ];
+      var projects = loadProjects();
+      var editingIndex = -1;
+      var form = document.getElementById("project-form");
+      var fields = {
+        category: document.getElementById("category"),
+        title: document.getElementById("title"),
+        challenge: document.getElementById("challenge"),
+        description: document.getElementById("description"),
+        tools: document.getElementById("tools"),
+        source: document.getElementById("source"),
+        outcome: document.getElementById("outcome"),
+        outcomeDetail: document.getElementById("outcome-detail")
+      };
+      var list = document.getElementById("project-list");
+      var preview = document.getElementById("preview");
+      var output = document.getElementById("export-output");
+      var status = document.getElementById("status");
+      var saveButton = document.getElementById("save-project");
+      var cancelButton = document.getElementById("cancel-edit");
+
+      function loadProjects() {
+        try {
+          var saved = window.localStorage.getItem(storageKey);
+          if (saved === null) return initialProjects.slice();
+          var parsed = JSON.parse(saved);
+          if (!Array.isArray(parsed) || !parsed.every(isProject)) {
+            throw new Error("Saved portfolio data has an invalid format.");
+          }
+          return parsed;
+        } catch (error) {
+          window.setTimeout(function () {
+            document.getElementById("status").textContent =
+              "Could not load saved drafts: " + error.message + " The original projects are shown.";
+          }, 0);
+          return initialProjects.slice();
+        }
+      }
+
+      function isProject(project) {
+        return project && ["category", "title", "description", "outcome", "outcomeDetail"]
+          .every(function (key) { return typeof project[key] === "string"; });
+      }
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, function (character) {
+          return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+          }[character];
+        });
+      }
+
+      function cardMarkup(project, index) {
+        return [
+          '      <details class="portfolio-card">',
+          '        <summary class="portfolio-summary">',
+          '          <span class="portfolio-card-head">',
+          '            <span class="portfolio-category">' + escapeHtml(project.category) + '</span>',
+          '            <span class="portfolio-index">' + String(index + 1).padStart(2, "0") + '</span>',
+          '          </span>',
+          '          <span class="portfolio-card-title">' + escapeHtml(project.title) + '</span>',
+          '          <span class="portfolio-toggle">',
+          '            <span class="portfolio-toggle-closed">View details</span>',
+          '            <span class="portfolio-toggle-open">Hide details</span>',
+          '            <span class="portfolio-toggle-icon" aria-hidden="true"></span>',
+          '          </span>',
+          '        </summary>',
+          '        <div class="portfolio-details">',
+          '          <dl class="portfolio-case">',
+          project.challenge ? '            <div><dt>Challenge</dt><dd>' + escapeHtml(project.challenge) + '</dd></div>' : null,
+          '            <div><dt>Contribution</dt><dd>' + escapeHtml(project.description) + '</dd></div>',
+          project.tools ? '            <div><dt>Tools</dt><dd>' + escapeHtml(project.tools) + '</dd></div>' : null,
+          '          </dl>',
+          '          <div class="portfolio-outcome">',
+          '            <strong>' + escapeHtml(project.outcome) + '</strong>',
+          '            <span>' + escapeHtml(project.outcomeDetail) + '</span>',
+          '          </div>',
+          /^https?:\/\//i.test(project.source || "") ? '          <a class="portfolio-source" href="' + escapeHtml(project.source) + '" target="_blank" rel="noopener">View source <span aria-hidden="true">&#8594;</span></a>' : null,
+          '        </div>',
+          '      </details>'
+        ].filter(function (line) { return line !== null; }).join("\n");
+      }
+
+      function saveProjects() {
+        try {
+          window.localStorage.setItem(storageKey, JSON.stringify(projects));
+          status.textContent = "Draft saved in this browser.";
+        } catch (error) {
+          status.textContent = "Could not save draft in this browser: " + error.message;
+        }
+      }
+
+      function render() {
+        list.replaceChildren();
+        preview.replaceChildren();
+        projects.forEach(function (project, index) {
+          var item = document.createElement("li");
+          item.className = "project-item";
+          var label = document.createElement("div");
+          var title = document.createElement("strong");
+          title.textContent = project.title;
+          var category = document.createElement("small");
+          category.textContent = project.category;
+          label.append(title, category);
+          var edit = document.createElement("button");
+          edit.className = "button button-secondary";
+          edit.type = "button";
+          edit.textContent = "Edit";
+          edit.setAttribute("aria-label", "Edit " + project.title);
+          edit.addEventListener("click", function () { beginEdit(index); });
+          var remove = document.createElement("button");
+          remove.className = "button button-danger delete-project";
+          remove.type = "button";
+          remove.textContent = "Remove";
+          remove.setAttribute("aria-label", "Remove " + project.title);
+          remove.addEventListener("click", function () { removeProject(index); });
+          item.append(label, edit, remove);
+          list.appendChild(item);
+
+          var details = document.createElement("details");
+          details.className = "preview-card";
+          var summary = document.createElement("summary");
+          summary.textContent = project.title;
+          var categoryPreview = document.createElement("p");
+          categoryPreview.className = "preview-category";
+          categoryPreview.textContent = project.category;
+          var description = document.createElement("p");
+          description.textContent = project.description;
+          var result = document.createElement("p");
+          result.className = "preview-outcome";
+          var resultTitle = document.createElement("strong");
+          resultTitle.textContent = project.outcome;
+          var resultDescription = document.createElement("span");
+          resultDescription.textContent = project.outcomeDetail;
+          result.append(resultTitle, resultDescription);
+          details.append(summary, categoryPreview, description, result);
+          if (/^https?:\/\//i.test(project.source || "")) {
+            var sourcePreview = document.createElement("p");
+            sourcePreview.textContent = "Source: " + project.source;
+            details.append(sourcePreview);
+          }
+          preview.appendChild(details);
+        });
+        document.getElementById("project-count").textContent = "(" + projects.length + ")";
+        output.value = projects.map(cardMarkup).join("\n\n");
+      }
+
+      function beginEdit(index) {
+        var project = projects[index];
+        Object.keys(fields).forEach(function (key) {         fields[key].value = project[key] || ""; });
+        editingIndex = index;
+        saveButton.textContent = "Save changes";
+        cancelButton.hidden = false;
+        document.getElementById("editor-heading").textContent = "Edit project";
+        fields.title.focus();
+      }
+
+      function resetForm() {
+        form.reset();
+        editingIndex = -1;
+        saveButton.textContent = "Add project";
+        cancelButton.hidden = true;
+        document.getElementById("editor-heading").textContent = "Add a project";
+      }
+
+      function removeProject(index) {
+        if (!window.confirm('Remove "' + projects[index].title + '" from this draft?')) return;
+        projects.splice(index, 1);
+        if (editingIndex === index) resetForm();
+        else if (editingIndex > index) editingIndex -= 1;
+        saveProjects();
+        render();
+      }
+
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        var project = {};
+        Object.keys(fields).forEach(function (key) {
+          project[key] = fields[key].value.trim();
+        });
+        if (project.source && !/^https?:\/\//i.test(project.source)) {
+          status.textContent = "Source link must start with http:// or https://.";
+          return;
+        }
+        if (!isProject(project)) {
+          status.textContent = "Complete all project fields before saving.";
+          return;
+        }
+        if (editingIndex === -1) projects.push(project);
+        else projects[editingIndex] = project;
+        resetForm();
+        saveProjects();
+        render();
+      });
+
+      cancelButton.addEventListener("click", resetForm);
+
+      document.getElementById("copy-export").addEventListener("click", async function () {
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(output.value);
+            status.textContent = "Portfolio HTML copied to clipboard.";
+            return;
+          } catch (error) {
+            status.textContent = "Clipboard access failed: " + error.message + " Select and copy the generated HTML below.";
+          }
+        } else {
+          status.textContent = "Clipboard access is unavailable here. Select and copy the generated HTML below.";
+        }
+        output.focus();
+        output.select();
+      });
+
+      document.getElementById("download-export").addEventListener("click", function () {
+        var blob = new Blob([output.value + "\n"], { type: "text/html;charset=utf-8" });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement("a");
+        link.href = url;
+        link.download = "portfolio-cards.html";
+        link.click();
+        URL.revokeObjectURL(url);
+        status.textContent = "Downloaded portfolio-cards.html.";
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>
